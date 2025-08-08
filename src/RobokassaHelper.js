@@ -14,6 +14,7 @@ const DEFAULT_CONFIG = {
   password2: '',
   testMode: false,
   resultUrlRequestMethod: 'POST',
+  recurring: false,
 
   // Additional configuration.
   paymentUrlTemplate: 'https://auth.robokassa.ru/Merchant/Index.aspx',
@@ -53,7 +54,8 @@ class RobokassaHelper {
       invId: null,
       email: null,
       outSumCurrency: null,
-      userData: {}
+      userData: {},
+      previousInvoiceID: null
     };
     options = _.extend({}, defaultOptions, options || {});
 
@@ -90,6 +92,14 @@ class RobokassaHelper {
       _.forEach(options.userData, (value, key) => {
         values[this.config.userDataKeyPrefix + key] = value;
       });
+    }
+
+    if (options.recurring) {
+      values.Recurring = 1;
+    }
+
+    if (options.previousInvoiceID) {
+      values.PreviousInvoiceID = options.previousInvoiceID;
     }
 
     const oUrl = url.parse(this.config.paymentUrlTemplate, true);
@@ -130,7 +140,7 @@ class RobokassaHelper {
     }
 
     return this.calculateHash(
-      values.join(':')
+        values.join(':')
     );
 
   }
@@ -259,7 +269,7 @@ class RobokassaHelper {
     }
 
     return this.calculateHash(
-      values.join(':')
+        values.join(':')
     );
 
   }
