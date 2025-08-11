@@ -18,6 +18,7 @@ const DEFAULT_CONFIG = {
 
   // Additional configuration.
   paymentUrlTemplate: 'https://auth.robokassa.ru/Merchant/Index.aspx',
+  recurringUrlTemplate: 'https://auth.robokassa.ru/Merchant/Recurring',
   debug: false,
   userDataKeyPrefix: 'Shp_',
 
@@ -103,6 +104,66 @@ class RobokassaHelper {
     }
 
     const oUrl = url.parse(this.config.paymentUrlTemplate, true);
+    delete oUrl.search;
+    _.extend(oUrl.query, values);
+
+    return url.format(oUrl);
+  }
+
+  /**
+   * @param {number} outSum
+   * @param {string} invDesc
+   * @param {object} [options]
+   *
+   * @returns {string}
+   */
+  generateRecurrentPaymentUrl (outSum, invDesc, options) {
+
+    const defaultOptions = {
+      invId: null,
+      outSumCurrency: null,
+      userData: {},
+      previousInvoiceID: null
+    };
+
+    options = _.extend({}, defaultOptions, options || {});
+
+    const values = {
+      MerchantLogin: this.config.merchantLogin,
+      OutSum: outSum,
+      Description: invDesc,
+      SignatureValue: this.calculatePaymentUrlHash(outSum, options),
+      Encoding: (options.encoding || 'UTF-8')
+    };
+
+    // InvId.
+    if (options.invId) {
+      values.InvId = options.invId;
+    }
+
+    // PreviousInvoiceID.
+    if (options.previousInvoiceID) {
+      values.PreviousInvoiceID = options.previousInvoiceID;
+    }
+
+    // OutSumCurrency.
+    if (options.outSumCurrency) {
+      values.OutSumCurrency = options.outSumCurrency;
+    }
+
+    // Is Test.
+    if (this.config.testMode || options.isTest) {
+      values.IsTest = 1;
+    }
+
+    // Custom user data.
+    if (options.userData) {
+      _.forEach(options.userData, (value, key) => {
+        values[this.config.userDataKeyPrefix + key] = value;
+      });
+    }
+
+    const oUrl = url.parse(this.config.recurringUrlTemplate, true);
     delete oUrl.search;
     _.extend(oUrl.query, values);
 
